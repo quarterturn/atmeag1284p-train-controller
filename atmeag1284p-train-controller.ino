@@ -112,6 +112,7 @@ tmElements_t tm;
 // tracks the EEPROM address
 const int eeprom_addr = 0;
 const int eeprom_addr2 = 128;
+const int eeprom_addr3 = 256;
 
 // the number of stops on the line, including terminus stations
 // right now just three since we're using I/O pins
@@ -120,6 +121,13 @@ const int eeprom_addr2 = 128;
 
 // array of wait times
 int station_wait_times[NUM_STOPS];
+
+// array of speeds
+// 0 START_SPEED
+// 1 MIN_SPEED
+// 2 MAX_SPEED
+// 3 IDLE_SPEED
+int speeds[4] = {18, 15, 41, 10};
 
 // array of on and off times
 // stored as: on hour, on minute, off hour, off minute
@@ -313,6 +321,7 @@ void setup()
   } else {
     EEPROM.get(eeprom_addr, station_wait_times);
     EEPROM.get(eeprom_addr2, on_off_times);
+    EEPROM.get(eeprom_addr3, speeds);
   }
   
   // set the local time provider
@@ -347,6 +356,8 @@ void loop()
       Serial1.println(F("5     Set Time"));
       Serial1.println(F("6     Show Time"));
       Serial1.println(F("7     Leave station now"));
+      Serial1.println(F("8     show speeds"));
+      Serial1.println(F("9     set speeds"));
       Serial1.println(F("x     Exit setup"));
       Serial1.println();
       mainMenuCount = 1;
@@ -394,6 +405,16 @@ void loop()
       // leave the station now
       motor_speed = START_SPEED;
       program_state = STATE_ACCEL;
+    }
+    else if (menuChar == '8')
+    {
+      // show the speeds
+      showTheSpeeds();
+    }
+    else if (menuChar == '9')
+    {
+      // show the speeds
+      setTheSpeeds();
     }
     else if (menuChar == 'x')
     {
@@ -445,13 +466,13 @@ void loop()
         program_state = STATE_ACCEL;
       }
       if (current_station == -1) {
-        display.setCursor(0,0);
-        display.clearDisplay();
-        display.println(F("TRAIN"));
-        display.println(F("NOT FOUND"));
-        display.println(F("MOVE"));
-        display.println(F("MANUALLY"));
-        display.display();
+//        display.setCursor(0,0);
+//        display.clearDisplay();
+//        display.println(F("TRAIN"));
+//        display.println(F("NOT FOUND"));
+//        display.println(F("MOVE"));
+//        display.println(F("MANUALLY"));
+//        display.display();
         displayMillis = millis();      
       }
       while (current_station == -1) {
@@ -1237,6 +1258,9 @@ void initEeprom(void)
 
   // write the on-off times to EEPROM
   EEPROM.put(eeprom_addr2, on_off_times);
+
+  // write the speeds to EEPROM
+  EEPROM.put(eeprom_addr3, speeds);
   
 }
 
@@ -1382,6 +1406,101 @@ void setOnOffTime(void)
         mainMenuCount = 0;
         // write the on-off times to EEPROM
         EEPROM.put(eeprom_addr2, on_off_times);
+        // return to main menu
+        return;
+      }
+    }
+  }
+}
+
+//---------------------------------------------------------------------------------------------//
+// function setTheSpeeds()
+// sets the train operating speeds
+// expects nothing
+// returns nothing
+//---------------------------------------------------------------------------------------------//
+void setTheSpeeds(void)
+{
+  // array of speeds
+  // 0 START_SPEED
+  // 1 MIN_SPEED
+  // 2 MAX_SPEED
+  // 3 IDLE_SPEED
+  // int speeds[4] = {18, 15, 41, 10};
+  // start
+  Serial1.println("Enter the start speed (18):");
+  speeds[0] = getSerial1Int();
+  // min
+  Serial1.println("Enter the min speed (15):");
+  speeds[1] = getSerial1Int();
+  // max
+  Serial1.println("Enter the max speed (41):");
+  speeds[2] = getSerial1Int();
+  // idle
+  Serial1.println("Enter the idle speed (10):");
+  speeds[3] = getSerial1Int();
+
+  Serial1.println(F("The train speeds are now: "));
+  Serial1.print(F("start: "));
+  Serial1.println(speeds[0]);
+  Serial1.print(F("min: "));
+  Serial1.println(speeds[1]);
+  Serial1.print(F("max: "));
+  Serial1.println(speeds[2]);
+  Serial1.print(F("idle: "));
+  Serial1.println(speeds[3]);
+  Serial1.print(on_off_times[3]);
+  Serial1.println();
+
+  while (1)
+  {
+    // if there is something in the Serial1 buffer read it
+    if (Serial1.available() >  0)
+    {
+      menuChar = Serial1.read();
+      if (menuChar == 27)
+      {
+        // set flag to redraw menu
+        mainMenuCount = 0;
+        // write the on-off times to EEPROM
+        EEPROM.put(eeprom_addr3, speeds);
+        // return to main menu
+        return;
+      }
+    }
+  }
+}
+
+//---------------------------------------------------------------------------------------------//
+// function showTheSpeeds()
+// shows the train operating speeds
+// expects nothing
+// returns nothing
+//---------------------------------------------------------------------------------------------//
+void showTheSpeeds(void)
+{
+  Serial1.println(F("The train speeds are now: "));
+  Serial1.print(F("start: "));
+  Serial1.println(speeds[0]);
+  Serial1.print(F("min: "));
+  Serial1.println(speeds[1]);
+  Serial1.print(F("max: "));
+  Serial1.println(speeds[2]);
+  Serial1.print(F("idle: "));
+  Serial1.println(speeds[3]);
+  Serial1.print(on_off_times[3]);
+  Serial1.println();
+
+  while (1)
+  {
+    // if there is something in the Serial1 buffer read it
+    if (Serial1.available() >  0)
+    {
+      menuChar = Serial1.read();
+      if (menuChar == 27)
+      {
+        // set flag to redraw menu
+        mainMenuCount = 0;
         // return to main menu
         return;
       }
